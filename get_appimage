@@ -45,7 +45,7 @@ cd $destdir
 
 test -e "VSCode-$version-$arch.AppImage" && {
     echo "appimage found!"
-#     exit 0
+    exit 0
 }
 
 
@@ -92,7 +92,7 @@ echo '<?xml version="1.0" encoding="UTF-8"?>
 
 appimage_name="VSCode"
 comment="Code Editing"
-categories="TextEditor;Development;IDE;"
+categories="Utility;TextEditor;Development;IDE;"
 
 ####################################
 
@@ -106,18 +106,43 @@ Icon=$prg
 Type=Application
 Terminal=false
 MimeType=application/x-code-workspace;
-Categories=$categories" > "$prg.desktop"
+Categories=$categories
+Actions=new-empty-window;
+Keywords=vscode;
+
+[Desktop Action new-empty-window]
+Name=New Empty Window
+Exec=$prg --new-window %F
+Icon=$prg" > "$prg.desktop"
+
+echo "[Desktop Entry]
+Name=$appimage_name - URL Handler
+Comment=Code Editing. Redefined.
+GenericName=$appimage_name - URL Handler
+Exec=$prg --open-url %U
+Icon=$prg
+Type=Application
+NoDisplay=true
+StartupNotify=true
+Categories=$categories
+MimeType=x-scheme-handler/vscode;
+Keywords=vscode;" > "$prg-url.desktop"
 
 echo "#!/bin/bash
 
 cd \$APPDIR
 desktopfile=~/.local/share/applications/$prg.desktop
 iconfile=~/.local/share/pixmaps/$prg.svg
+deskurlfile=~/.local/share/applications/$prg-url.desktop
 
 test ! -e \"\$desktopfile\" && cp $prg.desktop ~/.local/share/applications/
+test ! -e \"\$deskurlfile\" && cp $prg-url.desktop ~/.local/share/applications/
 test ! -e \"\$iconfile\" && cp $prg.svg ~/.local/share/pixmaps/
 
 if ! grep -q \"\$APPIMAGE\" \"\$desktopfile\"; then
+    cp $prg.desktop ~/.local/share/applications/
+    cp $prg-url.desktop ~/.local/share/applications/
+    cp $prg.svg ~/.local/share/pixmaps/
     sed -i \"s:Exec=$prg:Exec=\$APPIMAGE:\" \"\$desktopfile\"
     sed -i \"s:Icon=.*:Icon=\$iconfile:\" \"\$desktopfile\"
     /usr/bin/update-desktop-database -q || true
@@ -130,7 +155,7 @@ if ! grep -q \"\$APPIMAGE\" \"\$desktopfile\"; then
 fi
 
 cd \$APPDIR/VSCode-linux-x64
-./code" > AppRun
+./code \"\$@\"" > AppRun
 
 chmod +x AppRun
 cd ..
@@ -138,7 +163,7 @@ cd ..
 printf "\n"; for ((i=0; i<$COLUMNS; i++)); { printf '─'; }; echo -e "\n"
 
 env ARCH=$arch ./appimagetool-x86_64.AppImage "$prg.AppDir"
-mv "${appimage_name// /_}-$arch.AppImage" "$appimage_name-$version-$arch.AppImage"
+mv ${appimage_name// /_}*URL*-$arch.AppImage "$appimage_name-$version-$arch.AppImage"
 
 printf "\n"; for ((i=0; i<$COLUMNS; i++)); { printf '─'; }; echo -e "\n"
 
